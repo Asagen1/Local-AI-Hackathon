@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,20 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Background from '@/components/Background';
-import { markSetupComplete } from '@/utils/storage';
+import { markSetupComplete, saveParameters, loadParameters, Parameter, ParamType } from '@/utils/storage';
 
 const TEXT = '#455556';
 const MUTED = '#7AA8A8';
-
-type ParamType = 'text' | 'number' | 'date' | 'choice';
-
-type Parameter = {
-  id: string;
-  label: string;
-  type: ParamType;
-  options?: string[];
-  isDefault: boolean;
-};
 
 const DEFAULT_PARAMETERS: Parameter[] = [
   { id: 'name', label: 'Name', type: 'text', isDefault: true },
@@ -51,6 +41,13 @@ export default function SetupScreen() {
   const [type, setType] = useState<ParamType>('text');
   const [optionsText, setOptionsText] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const saved = loadParameters();
+    if (saved && saved.length > 0) {
+      setParameters(saved);
+    }
+  }, []);
 
   const addParameter = () => {
     const trimmed = label.trim();
@@ -81,6 +78,7 @@ export default function SetupScreen() {
     setParameters((prev) => prev.filter((p) => p.id !== id || p.isDefault));
 
   const handleSave = () => {
+    saveParameters(parameters);
     markSetupComplete();
     router.replace('/');
   };
