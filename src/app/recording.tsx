@@ -207,22 +207,50 @@ export default function RecordScreen() {
         className="px-5 pb-2 flex-row items-center justify-between"
         style={{ paddingTop: insets.top + 8 }}
       >
-        <TouchableOpacity className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
-          <Ionicons name="menu" size={28} color={TEXT} />
+        <TouchableOpacity onPress={() => setSidebarVisible(true)} className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
+          <Ionicons name="menu" size={24} color={TEXT} />
         </TouchableOpacity>
-
-          {/* TEMP: speech test button */}
-        <TouchableOpacity
-          onPress={() => router.push('/speech-test')}
-          className="px-4 py-2 rounded-full bg-[#00A3A3]"
-        >
-          <Text style={{ color: '#fff' }}>Speech test</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
-          <Ionicons name="ellipsis-vertical" size={22} color={TEXT} />
+        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: TEXT }}>Record</Text>
+        <TouchableOpacity onPress={() => setMoreMenuVisible(!moreMenuVisible)} className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
+          <Ionicons name="ellipsis-horizontal" size={24} color={TEXT} />
         </TouchableOpacity>
       </View>
+
+      {/* More Menu Dropdown */}
+      {moreMenuVisible && (
+        <View className="absolute right-5 bg-white rounded-2xl border border-[#9CC4C4] shadow-lg z-50" style={{ top: insets.top + 56, minWidth: 180 }}>
+          <TouchableOpacity
+            onPress={() => {
+              setMoreMenuVisible(false);
+              router.back();
+            }}
+            className="px-5 py-3 border-b border-[#E0E0E0]"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="arrow-back-outline" size={20} color={TEXT} />
+              <Text className="ml-3" style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: TEXT }}>
+                Go Back
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setMoreMenuVisible(false);
+              handleResetSetup();
+            }}
+            className="px-5 py-3"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="refresh-outline" size={20} color="#B00020" />
+              <Text className="ml-3" style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: '#B00020' }}>
+                Reset Setup
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         className="flex-1"
@@ -290,7 +318,7 @@ export default function RecordScreen() {
                 <TouchableOpacity
                   onPress={() => {
                     console.log('Processing transcript:', transcript);
-                    finish(transcript);
+                    finishRecording();
                   }}
                   className="px-5 py-2 rounded-full bg-[#00A3A3] mr-2"
                   activeOpacity={0.7}
