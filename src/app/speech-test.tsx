@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -7,35 +7,33 @@ import {
 
 export default function SpeechTest() {
   const [words, setWords] = useState('');
-  const [events, setEvents] = useState<string[]>([]);
-  const log = (m: string) => setEvents((p) => [...p.slice(-30), m]);
+  const [status, setStatus] = useState('');
 
-  useSpeechRecognitionEvent('start', () => log('start'));
-  useSpeechRecognitionEvent('audiostart', () => log('audiostart (mic open)'));
-  useSpeechRecognitionEvent('speechstart', () => log('speechstart (heard voice)'));
-  useSpeechRecognitionEvent('nomatch', () => log('nomatch'));
-  useSpeechRecognitionEvent('end', () => log('end'));
-  useSpeechRecognitionEvent('error', (e) => log(`ERROR: ${e.error} - ${e.message}`));
+  useSpeechRecognitionEvent('start', () => setStatus('Listening...'));
+  useSpeechRecognitionEvent('end', () => setStatus('Stopped'));
+  useSpeechRecognitionEvent('error', (e) => setStatus(`Error: ${e.error}`));
   useSpeechRecognitionEvent('result', (e) => {
     const t = e.results[0]?.transcript ?? '';
     setWords(t);
-    log(`result (final=${e.isFinal}): ${t}`);
+    setStatus(e.isFinal ? 'Complete' : 'Recording...');
   });
 
   const start = async () => {
     try {
       const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      log(`permission: ${perm.granted}`);
-      if (!perm.granted) return;
+      if (!perm.granted) {
+        setStatus('Permission denied');
+        return;
+      }
       setWords('');
+      setStatus('Starting...');
       ExpoSpeechRecognitionModule.start({
         lang: 'en-US',
         interimResults: true,
-        continuous: false, // simplest mode first
+        continuous: false,
       });
-      log('start() called');
     } catch (err: any) {
-      log(`THREW: ${err?.message ?? err}`);
+      setStatus(`Error: ${err?.message ?? err}`);
     }
   };
 
@@ -45,22 +43,17 @@ export default function SpeechTest() {
         onPress={start}
         style={{ backgroundColor: '#00A3A3', padding: 16, borderRadius: 12, marginBottom: 8 }}
       >
-        <Text style={{ color: '#fff', textAlign: 'center' }}>START (speak, then wait)</Text>
+        <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '600' }}>START RECORDING</Text>
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => ExpoSpeechRecognitionModule.stop()}
-        style={{ backgroundColor: '#999', padding: 16, borderRadius: 12 }}
+        style={{ backgroundColor: '#666', padding: 16, borderRadius: 12, marginBottom: 24 }}
       >
-        <Text style={{ color: '#fff', textAlign: 'center' }}>STOP</Text>
+        <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '600' }}>STOP</Text>
       </TouchableOpacity>
 
-      <Text style={{ fontSize: 24, marginVertical: 24 }}>{words || '(your words appear here)'}</Text>
-
-      <ScrollView style={{ backgroundColor: '#111', padding: 8, borderRadius: 8 }}>
-        {events.map((e, i) => (
-          <Text key={i} style={{ color: '#9FFFE0', fontSize: 12 }}>{e}</Text>
-        ))}
-      </ScrollView>
+      <Text style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>{status}</Text>
+      <Text style={{ fontSize: 18, lineHeight: 28 }}>{words || 'Speak to see your words here...'}</Text>
     </View>
   );
 }

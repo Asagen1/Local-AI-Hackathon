@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Animated,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ import Sidebar from '@/components/navigation/Sidebar';
 import PatientCard from '@/components/patient/PatientCard';
 import { generateChart, type Chart } from '../services/generateChart';
 import { usePatientsStore } from '@/hooks/stores/usePatientsStore';
+import { clearSetup } from '@/utils/storage';
 
 const TEXT = '#455556';
 const MUTED = '#7AA8A8';
@@ -40,8 +42,8 @@ export default function RecordScreen() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const [showDebug, setShowDebug] = useState(true); // Set to true to see debug info
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [generatedChart, setGeneratedChart] = useState<Chart | null>(null);
 
   const { addChart, loadCharts, getLatestCharts, searchCharts, charts } = usePatientsStore();
   
@@ -63,84 +65,132 @@ export default function RecordScreen() {
       continuous: true,
     });
 
-  const addDebugLog = (msg: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    const logMsg = `[${timestamp}] ${msg}`;
-    console.log(logMsg);
-    setDebugLogs(prev => [...prev.slice(-20), logMsg]); // Keep last 20 logs
-  };
-
   useSpeechRecognitionEvent('result', (e) => {
     const t = e.results[0]?.transcript ?? '';
-    addDebugLog(`🎤 Result: ${t.substring(0, 50)}${t.length > 50 ? '...' : ''} (final: ${e.isFinal})`);
     
     if (e.isFinal) {
       committed.current = `${committed.current} ${t}`.trim();
       setTranscript(committed.current);
-      addDebugLog(`✅ Committed: ${committed.current.length} chars`);
     } else {
       const interim = `${committed.current} ${t}`.trim();
       setTranscript(interim);
-      addDebugLog(`⏳ Interim: ${interim.length} chars`);
     }
   });
 
   useSpeechRecognitionEvent('error', (e) => {
-    addDebugLog(`❌ Error: ${e.error} - ${e.message}`);
+    console.error('Speech recognition error:', e.error, e.message);
     if (['not-allowed', 'service-not-allowed', 'language-not-supported'].includes(e.error)) {
       recording.current = false;
       setStatus('idle');
     }
   });
-  
-  useSpeechRecognitionEvent('start', () => {
-    addDebugLog('🎙️ Started listening');
+
+  useSpeechRecognitionEvent('end', () => {
+    recording.current = false;
+    
+    if (pendingFinish.current) {
+      pendingFinish.current = false;
+      finishRecording();
+    }
   });
 
   const startRecording = async () => {
-    addDebugLog(`Available: ${ExpoSpeechRecognitionModule.isRecognitionAvailable()}`);
-    const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-    addDebugLog(`Permission granted: ${perm.granted}`);
-    if (!perm.granted) return;
+    try {
+      const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      
+      if (!perm.granted) {
+        return;
+      }
 
-    committed.current = '';
-    setTranscript('');
-    recording.current = true;
-    setStatus('recording');
-    startListening();
+      committed.current = '';
+      setTranscript('');
+      setStatus('recording');
+      recording.current = true;
+      pendingFinish.current = false;
+      startListening();
+    } catch (err: any) {
+      console.error('Failed to start recording:', err);
+    }
   };
 
   const stopRecording = () => {
-    recording.current = false;
+    if (!recording.current) {
+      return;
+    }
     pendingFinish.current = true;
-    setStatus('idle'); // Changed from 'processing' to 'idle' to show transcript
     ExpoSpeechRecognitionModule.stop();
   };
 
-  const finish = async (input: string) => {
-    if (!input.trim()) {
+  const discardRecording = () => {
+    committed.current = '';
+    setTranscript('');
+    setStatus('idle');
+  };
+
+  const handleOpenChart = () => {
+    if (generatedChart) {
+      router.push(`/patient/${generatedChart.id}`);
+      setGeneratedChart(null);
+    }
+  };
+
+  const handleResetSetup = () => {
+    Alert.alert(
+      'Reset Setup',
+      'This will clear all configured parameters and return to setup. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            clearSetup();
+            router.replace('/setup');
+          },
+        },
+      ]
+    );
+  };
+
+  const finishRecording = async () => {
+    const finalTranscript = committed.current;
+    
+    if (!finalTranscript.trim()) {
       setStatus('idle');
       return;
     }
+
     setStatus('processing');
+
     try {
-      const chart = await generateChart(input);
-      addChart(chart); // Save to store
-      // Navigate to the newly created patient detail
-      router.push(`/patient/${chart.id}`);
-    } catch (err) {
-      console.warn('Chart generation failed', err);
-      setStatus('idle');
+      const chart = await generateChart(finalTranscript);
+      addChart(chart);
+      setGeneratedChart(chart);
+    } catch (error) {
+      console.error('Failed to generate chart:', error);
     } finally {
+      setStatus('idle');
+      committed.current = '';
       setTranscript('');
     }
   };
 
-  const submitText = () => {
-    const value = text.trim();
-    if (!value) return;
+  const submitText = async () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    setStatus('processing');
     setText('');
-    finish(value);
+
+    try {
+      const chart = await generateChart(trimmed);
+      addChart(chart);
+      setGeneratedChart(chart);
+    } catch (error) {
+      console.error('Failed to generate chart:', error);
+    } finally {
+      setStatus('idle');
+    }
   };
 
   const handleSelectPatient = (id: string) => {
@@ -296,13 +346,27 @@ export default function RecordScreen() {
           )}
         </ScrollView>
 
-        {showDebug && (
-          <View className="mx-6 mb-2 p-2 rounded-xl bg-black/70" style={{ maxHeight: 140 }}>
-            <ScrollView>
-              {debugLogs.map((l, i) => (
-                <Text key={i} style={{ color: '#9FFFE0', fontSize: 10 }}>{l}</Text>
-              ))}
-            </ScrollView>
+        {/* Success card after chart generation */}
+        {generatedChart && (
+          <View className="mx-6 mb-4 p-5 rounded-2xl border border-[#00A3A3] bg-white/90">
+            <View className="flex-row items-center mb-3">
+              <Ionicons name="checkmark-circle" size={24} color="#00A3A3" />
+              <Text className="ml-2" style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: TEXT }}>
+                Chart Generated
+              </Text>
+            </View>
+            <Text className="mb-4" style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: MUTED }}>
+              Patient chart for {generatedChart.patientName} has been created successfully.
+            </Text>
+            <TouchableOpacity
+              onPress={handleOpenChart}
+              className="bg-[#00A3A3] py-3 rounded-full items-center"
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#FFFFFF' }}>
+                Open Chart
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
