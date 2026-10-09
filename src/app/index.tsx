@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,13 +18,37 @@ function AppBar({
   onSearch,
   onMore,
   searchVisible,
+  searchQuery,
+  onSearchChange,
 }: {
   onMenu: () => void;
   onSearch: () => void;
   onMore: () => void;
   searchVisible: boolean;
+  searchQuery: string;
+  onSearchChange: (text: string) => void;
 }) {
   const insets = useSafeAreaInsets();
+  const searchAnim = new Animated.Value(searchVisible ? 1 : 0);
+
+  useEffect(() => {
+    Animated.spring(searchAnim, {
+      toValue: searchVisible ? 1 : 0,
+      useNativeDriver: false,
+      damping: 20,
+      stiffness: 300,
+    }).start();
+  }, [searchVisible]);
+
+  const searchWidth = searchAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 280],
+  });
+
+  const searchOpacity = searchAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0, 1],
+  });
 
   return (
     <View
@@ -35,7 +59,36 @@ function AppBar({
         <Ionicons name="menu" size={28} color={TEXT} />
       </TouchableOpacity>
 
-      <View className="flex-row items-center">
+      <View className="flex-1 flex-row items-center justify-end">
+        {/* Animated Search Bar */}
+        <Animated.View
+          style={{
+            width: searchWidth,
+            opacity: searchOpacity,
+            overflow: 'hidden',
+          }}
+        >
+          {searchVisible && (
+            <View className="flex-row items-center px-4 py-2 rounded-full border border-[#9CC4C4] bg-white/50 mr-2">
+              <Ionicons name="search" size={18} color={MUTED} />
+              <TextInput
+                value={searchQuery}
+                onChangeText={onSearchChange}
+                placeholder="Search patients..."
+                placeholderTextColor={MUTED}
+                autoFocus
+                className="flex-1 ml-2"
+                style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: TEXT }}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => onSearchChange('')} activeOpacity={0.6}>
+                  <Ionicons name="close-circle" size={18} color={MUTED} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </Animated.View>
+
         <TouchableOpacity onPress={onSearch} className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
           <Ionicons name={searchVisible ? "close" : "search"} size={24} color={TEXT} />
         </TouchableOpacity>
@@ -83,30 +136,9 @@ export default function HomeScreen() {
         onSearch={toggleSearch}
         onMore={() => console.log('More pressed')}
         searchVisible={searchVisible}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
-
-      {/* Search Bar */}
-      {searchVisible && (
-        <View className="px-6 pb-3">
-          <View className="flex-row items-center px-4 py-3 rounded-full border border-[#9CC4C4] bg-white/50">
-            <Ionicons name="search" size={20} color={MUTED} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search patients..."
-              placeholderTextColor={MUTED}
-              autoFocus
-              className="flex-1 ml-2"
-              style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: TEXT }}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.6}>
-                <Ionicons name="close-circle" size={20} color={MUTED} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
 
       <ScrollView 
         className="flex-1 px-6"

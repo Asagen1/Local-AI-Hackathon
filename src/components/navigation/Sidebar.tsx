@@ -54,12 +54,14 @@ export default function Sidebar({ visible, onClose, onSelectPatient, showSearch 
       animationType="fade"
       onRequestClose={onClose}
       statusBarTranslucent
+      accessible={false}
     >
       <View className="flex-1 flex-row">
         {/* Sidebar - LEFT SIDE */}
         <View
           className="w-[300px] bg-[#F0FBFB] shadow-lg"
           style={{ paddingTop: insets.top }}
+          accessible={true}
         >
           {/* Header */}
           <View className="px-5 py-4 flex-row items-center justify-between border-b border-[#9CC4C4]/30">
@@ -136,7 +138,12 @@ export default function Sidebar({ visible, onClose, onSelectPatient, showSearch 
         </View>
 
         {/* Backdrop - RIGHT SIDE */}
-        <Pressable className="flex-1 bg-black/50" onPress={onClose} />
+        <Pressable 
+          className="flex-1 bg-black/50" 
+          onPress={onClose}
+          accessible={false}
+          importantForAccessibility="no"
+        />
       </View>
     </Modal>
   );
