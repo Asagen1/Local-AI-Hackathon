@@ -4,6 +4,7 @@ import { PaperProvider } from 'react-native-paper';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { useEffect, useState } from 'react';
 import { isSetupComplete } from '@/utils/storage';
+import { llmService } from '@/services/llm';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -13,8 +14,23 @@ export default function RootLayout() {
     Inter_700Bold,
   });
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
+  const [modelLoading, setModelLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
+
+  // Pre-initialize ONNX model in background
+  useEffect(() => {
+    console.log('Pre-initializing ONNX model...');
+    llmService.initialize()
+      .then(() => {
+        console.log('ONNX model ready!');
+        setModelLoading(false);
+      })
+      .catch(err => {
+        console.error('ONNX model initialization failed:', err);
+        setModelLoading(false); // Continue anyway with fallback
+      });
+  }, []);
 
   // Check setup status periodically to detect changes
   useEffect(() => {

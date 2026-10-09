@@ -16,7 +16,8 @@
           "microphonePermission": "Used to record patient notes.",
           "speechRecognitionPermission": "Used to transcribe patient notes."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "ios": {
       "supportsTablet": true,

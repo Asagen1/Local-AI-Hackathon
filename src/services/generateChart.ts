@@ -1,4 +1,5 @@
 import { loadParameters } from '@/utils/storage';
+import { llmService } from './llm';
 
 export type Chart = {
   id: string;
@@ -12,24 +13,28 @@ export async function generateChart(transcript: string): Promise<Chart> {
   // Load configured parameters
   const configuredParams = loadParameters() || [];
   
-  // TODO: Phase 6 - send `transcript` + configuredParams to your SLM
-  // For now, initialize all parameters as empty (to be filled by LLM)
+  // Initialize all parameters as empty
   const parameters: Record<string, string> = {};
   configuredParams.forEach(param => {
     parameters[param.label] = '';
   });
 
-  // Simple regex to extract a name as placeholder
-  const nameMatch = transcript.match(/(?:my name is|I'm|I am|this is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
-  const extractedName = nameMatch ? nameMatch[1] : 'Unknown Patient';
+  // Extract patient name using ONNX NER model
+  console.log('Extracting patient name using ONNX model...');
+  let extractedName: string;
+  try {
+    extractedName = await llmService.extractName(transcript);
+    console.log('ONNX extracted name:', extractedName);
+  } catch (error) {
+    console.error('LLM extraction failed:', error);
+    extractedName = 'Unknown Patient';
+  }
   
   // Set the name in parameters if it exists
   const nameParam = configuredParams.find(p => p.label.toLowerCase() === 'name');
   if (nameParam) {
     parameters[nameParam.label] = extractedName;
   }
-
-  await new Promise((r) => setTimeout(r, 1500));
   
   return {
     id: Date.now().toString(),
