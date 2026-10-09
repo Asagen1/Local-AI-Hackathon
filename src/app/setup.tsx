@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,9 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Background from '../index';
+import { router } from 'expo-router';
+import Background from '@/components/Background';
+import { markSetupComplete } from '@/utils/storage';
 
 const TEXT = '#455556';
 const MUTED = '#7AA8A8';
@@ -42,12 +44,7 @@ const TYPES: { value: ParamType; label: string }[] = [
   { value: 'choice', label: 'Choice' },
 ];
 
-type Props = {
-  onSave?: (parameters: Parameter[]) => void;
-  onBack?: () => void;
-};
-
-export default function SetupScreen({ onSave, onBack }: Props) {
+export default function SetupScreen() {
   const insets = useSafeAreaInsets();
   const [parameters, setParameters] = useState<Parameter[]>(DEFAULT_PARAMETERS);
   const [label, setLabel] = useState('');
@@ -83,6 +80,11 @@ export default function SetupScreen({ onSave, onBack }: Props) {
   const removeParameter = (id: string) =>
     setParameters((prev) => prev.filter((p) => p.id !== id || p.isDefault));
 
+  const handleSave = () => {
+    markSetupComplete();
+    router.replace('/');
+  };
+
   const defaults = parameters.filter((p) => p.isDefault);
   const custom = parameters.filter((p) => !p.isDefault);
 
@@ -91,12 +93,11 @@ export default function SetupScreen({ onSave, onBack }: Props) {
       <StatusBar style="dark" />
       <Background />
 
-      {/* Header */}
       <View
         className="px-5 pb-2 flex-row items-center"
         style={{ paddingTop: insets.top + 8 }}
       >
-        <TouchableOpacity onPress={onBack} className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
+        <TouchableOpacity onPress={() => {}} className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
           <Ionicons name="arrow-back" size={26} color={TEXT} />
         </TouchableOpacity>
         <Text className="ml-2" style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: TEXT }}>
@@ -108,41 +109,47 @@ export default function SetupScreen({ onSave, onBack }: Props) {
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          className="flex-1 px-6"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Default parameters */}
-          <Text className="mt-4 mb-2" style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: MUTED }}>
-            DEFAULT PARAMETERS
-          </Text>
-          {defaults.map((p) => (
-            <ParamRow key={p.id} param={p} />
-          ))}
-
-          {/* Custom parameters */}
-          <Text className="mt-6 mb-2" style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: MUTED }}>
-            CUSTOM PARAMETERS
-          </Text>
-          {custom.length === 0 && (
-            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: MUTED }}>
-              None yet. Add one below.
+        <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 32 }}>
+          <View className="mt-6">
+            <Text
+              className="mb-3"
+              style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, letterSpacing: 0.5, color: MUTED }}
+            >
+              DEFAULT PARAMETERS
             </Text>
-          )}
-          {custom.map((p) => (
-            <ParamRow key={p.id} param={p} onRemove={() => removeParameter(p.id)} />
-          ))}
+            {defaults.map((param) => (
+              <ParamRow key={param.id} param={param} />
+            ))}
+          </View>
 
-          {/* Add form */}
-          <View className="mt-6 p-4 rounded-[20px] border border-[#9CC4C4] bg-white/35">
+          <View className="mt-6">
+            <Text
+              className="mb-3"
+              style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, letterSpacing: 0.5, color: MUTED }}
+            >
+              CUSTOM PARAMETERS
+            </Text>
+            {custom.length === 0 ? (
+              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: MUTED }}>
+              </Text>
+            ) : (
+              custom.map((param) => (
+                <ParamRow key={param.id} param={param} onRemove={() => removeParameter(param.id)} />
+              ))
+            )}
+          </View>
+
+          <View className="mt-6">
             <TextInput
               className="px-4 py-3 rounded-[16px] border border-[#8DB8B8] bg-[#C8EDEC]"
               style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: TEXT }}
               placeholder="Parameter name (e.g. Blood Pressure)"
               placeholderTextColor={TEXT}
               value={label}
-              onChangeText={setLabel}
+              onChangeText={(text) => {
+                setLabel(text);
+                setError('');
+              }}
             />
 
             <View className="flex-row flex-wrap mt-3">
@@ -200,9 +207,8 @@ export default function SetupScreen({ onSave, onBack }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* Save */}
           <TouchableOpacity
-            onPress={() => onSave?.(parameters)}
+            onPress={handleSave}
             activeOpacity={0.7}
             className="mt-6 py-3 rounded-[28px] items-center bg-[#00A3A3]"
           >

@@ -1,36 +1,28 @@
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
-
 import { router } from 'expo-router';
+import Background from '@/components/Background';
+import Sidebar from '@/components/navigation/Sidebar';
+import PatientCard from '@/components/patient/PatientCard';
+import { usePatientsStore } from '@/hooks/stores/usePatientsStore';
+import { clearSetup } from '@/utils/storage';
 
 const TEXT = '#455556';
 const MUTED = '#7AA8A8';
-
-function Background() {
-  return (
-    <Svg style={{ position: 'absolute', width: '100%', height: '100%' }}>
-      <Defs>
-        <RadialGradient id="bg" cx="50%" cy="45%" r="75%">
-          <Stop offset="0" stopColor="#E6FFFF" />
-          <Stop offset="1" stopColor="#B3FFFF" />
-        </RadialGradient>
-      </Defs>
-      <Rect width="100%" height="100%" fill="url(#bg)" />
-    </Svg>
-  );
-}
 
 function AppBar({
   onMenu,
   onSearch,
   onMore,
+  searchVisible,
 }: {
   onMenu: () => void;
   onSearch: () => void;
   onMore: () => void;
+  searchVisible: boolean;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -45,7 +37,7 @@ function AppBar({
 
       <View className="flex-row items-center">
         <TouchableOpacity onPress={onSearch} className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
-          <Ionicons name="search" size={24} color={TEXT} />
+          <Ionicons name={searchVisible ? "close" : "search"} size={24} color={TEXT} />
         </TouchableOpacity>
         <TouchableOpacity onPress={onMore} className="w-11 h-11 items-center justify-center" activeOpacity={0.6}>
           <Ionicons name="ellipsis-vertical" size={22} color={TEXT} />
@@ -56,46 +48,131 @@ function AppBar({
 }
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { charts, loadCharts, getLatestCharts, searchCharts } = usePatientsStore();
+  const hasPatients = charts.length > 0;
+  
+  // Get filtered charts based on search
+  const displayedCharts = searchQuery.trim() ? searchCharts(searchQuery) : getLatestCharts(3);
+
+  useEffect(() => {
+    loadCharts();
+  }, [loadCharts]);
+
+  const handleSelectPatient = (id: string) => {
+    router.push(`/patient/${id}`);
+  };
+
+  const toggleSearch = () => {
+    setSearchVisible(!searchVisible);
+    if (searchVisible) {
+      setSearchQuery(''); // Clear search when closing
+    }
+  };
+
   return (
     <View className="flex-1">
       <StatusBar style="dark" />
       <Background />
 
       <AppBar
-        onMenu={() => console.log('Menu pressed')}
-        onSearch={() => console.log('Search pressed')}
+        onMenu={() => setSidebarVisible(true)}
+        onSearch={toggleSearch}
         onMore={() => console.log('More pressed')}
+        searchVisible={searchVisible}
       />
 
-      <View className="flex-1 px-6">
-        {/* Heading */}
-        <Text
-          className="mt-20 ml-5"
-          style={{
-            fontFamily: 'Inter_700Bold',
-            fontSize: 50,
-            lineHeight: 50,
-            color: TEXT,
-            maxWidth: 300,
-          }}
-        >
-          You have no patients yet...
-        </Text>
-
-        {/* Glass button */}
-        <TouchableOpacity
-          onPress={() => console.log('hello')}
-          activeOpacity={0.7}
-          className="self-center mt-20 flex-row items-center justify-center px-10 py-3 rounded-[20px] border border-[#9CC4C4] bg-white/35"
-        >
-          <View className="w-9 h-9 rounded-full bg-[#D3EAEA] items-center justify-center mr-3.5">
-            <Ionicons name="add" size={22} color={MUTED} />
+      {/* Search Bar */}
+      {searchVisible && (
+        <View className="px-6 pb-3">
+          <View className="flex-row items-center px-4 py-3 rounded-full border border-[#9CC4C4] bg-white/50">
+            <Ionicons name="search" size={20} color={MUTED} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search patients..."
+              placeholderTextColor={MUTED}
+              autoFocus
+              className="flex-1 ml-2"
+              style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: TEXT }}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.6}>
+                <Ionicons name="close-circle" size={20} color={MUTED} />
+              </TouchableOpacity>
+            )}
           </View>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: TEXT }}>
-            Add Patients
-          </Text>
+        </View>
+      )}
+
+      <ScrollView 
+        className="flex-1 px-6"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 16 }}
+      >
+        {hasPatients ? (
+          <>
+            <Text className="mt-8 ml-5" style={{ fontFamily: 'Inter_700Bold', fontSize: 42, lineHeight: 48, color: TEXT, maxWidth: 300 }}>
+              Your Patients
+            </Text>
+            <Text className="mt-2 ml-5" style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: MUTED }}>
+              {charts.length} {charts.length === 1 ? 'patient' : 'patients'} total
+            </Text>
+
+            <View className="mt-8">
+              <View className="flex-row items-center justify-between mb-4 px-2">
+                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: TEXT }}>
+                  {searchQuery ? 'Search Results' : 'Recent'}
+                </Text>
+                {!searchQuery && (
+                  <TouchableOpacity onPress={() => setSidebarVisible(true)} activeOpacity={0.6}>
+                    <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: MUTED }}>View all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {displayedCharts.length > 0 ? (
+                displayedCharts.map((chart) => (
+                  <PatientCard key={chart.id} chart={chart} onPress={() => handleSelectPatient(chart.id)} />
+                ))
+              ) : (
+                <View className="py-8 items-center">
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: MUTED }}>
+                    No patients found
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity onPress={() => router.push('/recording')} activeOpacity={0.7} className="self-center mt-8 flex-row items-center justify-center px-10 py-3 rounded-[20px] border border-[#9CC4C4] bg-white/35">
+              <View className="w-9 h-9 rounded-full bg-[#D3EAEA] items-center justify-center mr-3.5">
+                <Ionicons name="add" size={22} color={MUTED} />
+              </View>
+              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: TEXT }}>Add Patient</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text className="mt-20 ml-5" style={{ fontFamily: 'Inter_700Bold', fontSize: 50, lineHeight: 50, color: TEXT, maxWidth: 300 }}>
+              You have no patients yet...
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/recording')} activeOpacity={0.7} className="self-center mt-20 flex-row items-center justify-center px-10 py-3 rounded-[20px] border border-[#9CC4C4] bg-white/35">
+              <View className="w-9 h-9 rounded-full bg-[#D3EAEA] items-center justify-center mr-3.5">
+                <Ionicons name="add" size={22} color={MUTED} />
+              </View>
+              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: TEXT }}>Add Patients</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        <TouchableOpacity onPress={() => { clearSetup(); router.replace('/setup'); }} activeOpacity={0.7} className="self-center mt-6 px-6 py-2 rounded-[20px] border border-red-400 bg-red-100/50">
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: '#B00020' }}>Reset Setup (Debug)</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
+
+      <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} onSelectPatient={handleSelectPatient} showSearch={true} />
     </View>
   );
 }

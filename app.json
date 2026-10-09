@@ -9,7 +9,14 @@
     "scheme": "hackathon-fresh",
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Used to record patient notes.",
+          "speechRecognitionPermission": "Used to transcribe patient notes."
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,

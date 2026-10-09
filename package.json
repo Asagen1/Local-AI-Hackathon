@@ -12,6 +12,7 @@
     "expo-linear-gradient": "~57.0.2",
     "expo-linking": "~57.0.12",
     "expo-router": "~57.0.25",
+    "expo-speech-recognition": "^57.1.1",
     "expo-status-bar": "~57.0.1",
     "nativewind": "^4.2.7",
     "react": "19.2.3",
