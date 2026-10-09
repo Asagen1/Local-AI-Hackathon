@@ -14,12 +14,18 @@ This project was created **completely fresh** on October 9, 2026 to ensure full 
 
 ## Project Info
 
+**Project Name:** Narscribe  
+**Project Description:** Narscribe is an offline-first, AI-powered mobile app that helps Filipino registered nurses reduce documentation workload to focus more on direct patient care. Using on-device speech recognition and specialized processing, it converts spoken updates into structured notes, provides real-time missing-info prompts, and securely stores encrypted data offline until syncing with hospital systems.
+
 This is a React Native mobile app using Expo that will run AI models locally on-device without requiring internet connectivity.
 
 ## Tech Stack (Minimal - To Be Extended During Hackathon)
 
 - **React Native** via Expo
 - **TypeScript**
+- **AI Models & Libraries:**
+  - **DistilBERT-NER** (Small Language Model / SLM)
+  - **expo-speech-recognition** (Voice to Text)
 - More packages to be added as needed during development
 
 ## Getting Started
@@ -35,4 +41,4 @@ All development will be tracked in commits starting from October 9, 2026.
 
 ---
 
-**Team:** Jomar (jomarescala10@gmail.com)
+**Team:** Mark Jason Manlapaz, Jomar Escala, Faramir Lance Gaffud, Nino Anthony Bonito
