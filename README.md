@@ -12,6 +12,10 @@ This project was created **completely fresh** on October 9, 2026 to ensure full 
 - ✅ Clean Git history starting from October 9, 2026
 - ✅ Only official Expo starter template code
 
+## AI Usage Disclosure
+
+In the spirit of transparency, please note that **Claude Sonnet 4.5** and **Gemini 3.1** were utilized as AI coding assistants during the development of this project.
+
 ## Project Info
 
 **Project Name:** Narscribe  
@@ -24,7 +28,7 @@ This is a React Native mobile app using Expo that will run AI models locally on-
 - **React Native** via Expo
 - **TypeScript**
 - **AI Models & Libraries:**
-  - **DistilBERT-NER** (Small Language Model / SLM)
+  - **Qwen2.5:0.5b** (Small Language Model / SLM)
   - **expo-speech-recognition** (Voice to Text)
 - More packages to be added as needed during development
 
