@@ -1,22 +1,50 @@
 {
   "name": "hackathon-fresh",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo/vector-icons": "^15.1.1",
+    "@shopify/flash-list": "^2.0.2",
     "expo": "~57.0.27",
+    "expo-constants": "~57.0.21",
+    "expo-font": "~57.0.4",
+    "expo-linear-gradient": "~57.0.2",
+    "expo-linking": "~57.0.12",
+    "expo-router": "~57.0.25",
     "expo-status-bar": "~57.0.1",
+    "nativewind": "^4.2.7",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-mmkv": "^4.3.2",
+    "react-native-paper": "^5.15.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-svg": "^15.15.4",
+    "react-native-vector-icons": "^10.3.0",
+    "react-native-web": "^0.21.2",
+    "tailwindcss": "^3.4.19",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.71.1",
+    "@typescript-eslint/parser": "^8.71.1",
+    "babel-plugin-module-resolver": "^5.0.3",
+    "babel-preset-expo": "^57.0.14",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.9",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json}\"",
+    "type-check": "tsc --noEmit"
   },
   "private": true
 }
